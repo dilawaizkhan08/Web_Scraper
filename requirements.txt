@@ -1,0 +1,7 @@
+selenium==4.5.0
+python-dotenv==1.0.0
+urllib3==1.26.7
+googlesearch-python
+
+
+
