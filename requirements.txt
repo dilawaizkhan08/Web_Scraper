@@ -4,7 +4,7 @@ urllib3==1.26.7
 googlesearch-python
 SQLAlchemy 
 Flask-SQLAlchemy
-
+numpy
 
 
 

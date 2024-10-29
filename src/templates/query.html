@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Query Interface</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        #response {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <h1>Query the Scraped Data</h1>
+    <form id="queryForm">
+        <label for="query">Enter your question:</label><br>
+        <input type="text" id="query" name="query" required style="width: 100%; padding: 8px; margin: 8px 0;"><br>
+        <button type="submit" style="padding: 10px 15px;">Submit</button>
+    </form>
+
+    <div id="response" style="display:none;">
+        <h2>Response</h2>
+        <p id="answer"></p>
+    </div>
+
+    <script>
+        document.getElementById('queryForm').addEventListener('submit', async (e) => {
+            e.preventDefault(); // Prevent the default form submission
+
+            const query = document.getElementById('query').value; // Get the query from the input field
+            const responseDiv = document.getElementById('response'); // Div to show the response
+            const answerPara = document.getElementById('answer'); // Paragraph to display the answer
+
+            // Clear any previous response and show a loading message
+            responseDiv.style.display = 'none';
+            answerPara.innerText = 'Loading...';
+
+            // Send the question to the server
+            try {
+                const response = await fetch('/generate-answer', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ query }) // Send the query as JSON in the request body
+                });
+
+                const data = await response.json(); // Parse the JSON response
+
+                // Display the response
+                responseDiv.style.display = 'block';
+                answerPara.innerText = data.response ? data.response : "No answer available."; // Show the answer or a default message
+            } catch (error) {
+                answerPara.innerText = "Error fetching answer. Please try again."; // Show error message on failure
+            }
+        });
+    </script>
+</body>
+</html>

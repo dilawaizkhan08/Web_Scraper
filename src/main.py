@@ -171,4 +171,4 @@ if __name__ == "__main__":
     web_crawler = WebCrawler(headless=True)  # Set headless=False to see the browser in action
     query = input("Enter your search query: ")
     web_crawler.find_urls(query)  # Find and save URLs in the database
-    web_crawler.crawl_urls()      # Crawl and scrape data from the saved URLs in the database
+    web_crawler.crawl_urls()      
