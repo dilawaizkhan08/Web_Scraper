@@ -4,6 +4,7 @@
 /__pycache__/
 .venv
 *.pyc
-src/__pycache__/main.cpython-312.pyc
-urls.txt
-*.log
+src/__pycache__/
+Google_Maps_Scrapper/venv
+
+
