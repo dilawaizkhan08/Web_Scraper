@@ -5,6 +5,6 @@
 .venv
 *.pyc
 src/__pycache__/
-Google_Maps_Scrapper/venv
+/Google_Maps_Scrapper/venv
 
 
