@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Query Interface</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #response { margin-top: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        table, th, td { border: 1px solid #ddd; }
+        th, td { padding: 8px; text-align: left; }
+        #loadingMessage { display: none; font-size: 1.1em; color: #555; }
+    </style>
+</head>
+<body>
+    <h1>Data Query Interface</h1>
+    <form id="queryForm">
+        <label for="search">Enter search term:</label><br>
+        <input type="text" id="search" required><br><br>
+        <button type="submit">Submit</button>
+    </form>
+    <div id="loadingMessage">Loading, please wait...</div>
+    <div id="response"></div>
+
+    <script>
+        document.getElementById('queryForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const searchTerm = document.getElementById('search').value;
+            document.getElementById('loadingMessage').style.display = 'block';
+
+            try {
+                const response = await fetch('/query', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ search_term: searchTerm })
+                });
+                const data = await response.json();
+                document.getElementById('loadingMessage').style.display = 'none';
+                displayResults(data);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+
+        function displayResults(data) {
+            let html = `<table>
+                <tr><th>Name</th><th>Website</th><th>Introduction</th><th>Phone Number</th><th>Address</th>
+                <th>Review Count</th><th>Avg. Review</th><th>Store</th><th>Pickup</th><th>Delivery</th><th>Type</th><th>Opens At</th></tr>`;
+            data.forEach(row => {
+                html += `<tr><td>${row.Names || ''}</td><td>${row.Website || ''}</td><td>${row.Introduction || ''}</td>
+                         <td>${row["Phone Number"] || ''}</td><td>${row.Address || ''}</td><td>${row["Review Count"] || ''}</td>
+                         <td>${row["Average Review Count"] || ''}</td><td>${row["Store Shopping"] || ''}</td>
+                         <td>${row["In Store Pickup"] || ''}</td><td>${row.Delivery || ''}</td><td>${row.Type || ''}</td>
+                         <td>${row["Opens At"] || ''}</td></tr>`;
+            });
+            html += '</table>';
+            document.getElementById('response').innerHTML = html;
+        }
+    </script>
+</body>
+</html>

@@ -5,6 +5,8 @@ googlesearch-python
 SQLAlchemy 
 Flask-SQLAlchemy
 numpy
+langchain
+langchain-community
 
 
 

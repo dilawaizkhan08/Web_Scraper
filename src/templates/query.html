@@ -15,6 +15,24 @@
             border: 1px solid #ddd;
             background-color: #f9f9f9;
         }
+        #loadingMessage {
+            display: none;
+            font-size: 1.1em;
+            color: #555;
+            margin-top: 15px;
+        }
+        .result-item {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        .result-item h3 {
+            margin: 0;
+            font-size: 1.2em;
+        }
+        .result-item p {
+            margin: 5px 0;
+        }
     </style>
 </head>
 <body>
@@ -25,40 +43,62 @@
         <button type="submit" style="padding: 10px 15px;">Submit</button>
     </form>
 
+    <!-- Loading Message -->
+    <div id="loadingMessage">Loading, please wait...</div>
+
     <div id="response" style="display:none;">
         <h2>Response</h2>
-        <p id="answer"></p>
+        <div id="results"></div>
     </div>
 
     <script>
         document.getElementById('queryForm').addEventListener('submit', async (e) => {
-            e.preventDefault(); // Prevent the default form submission
+            e.preventDefault(); // Prevent default form submission
 
-            const query = document.getElementById('query').value; // Get the query from the input field
-            const responseDiv = document.getElementById('response'); // Div to show the response
-            const answerPara = document.getElementById('answer'); // Paragraph to display the answer
+            const query = document.getElementById('query').value;
+            const responseDiv = document.getElementById('response');
+            const resultsDiv = document.getElementById('results'); // Div to display each result
+            const loadingMessage = document.getElementById('loadingMessage'); // Loading message div
 
-            // Clear any previous response and show a loading message
+            // Clear any previous results and show loading
+            resultsDiv.innerHTML = '';
             responseDiv.style.display = 'none';
-            answerPara.innerText = 'Loading...';
+            loadingMessage.style.display = 'block';  // Show loading message
 
-            // Send the question to the server
             try {
+                // Fetch the answer from the server
                 const response = await fetch('/generate-answer', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ query }) // Send the query as JSON in the request body
+                    body: JSON.stringify({ query })
                 });
 
-                const data = await response.json(); // Parse the JSON response
+                const data = await response.json();
 
-                // Display the response
-                responseDiv.style.display = 'block';
-                answerPara.innerText = data.response ? data.response : "No answer available."; // Show the answer or a default message
+                // Hide loading message once data is received
+                loadingMessage.style.display = 'none';
+
+                // Check for response data and display it
+                if (data.response && Array.isArray(data.response)) {
+                    responseDiv.style.display = 'block';
+                    data.response.forEach(result => {
+                        const resultItem = document.createElement('div');
+                        resultItem.classList.add('result-item');
+
+                        resultItem.innerHTML = `
+                            <h3><a href="${result.url}" target="_blank">${result.title}</a></h3>
+                            <p>${result.content}</p>
+                        `;
+                        resultsDiv.appendChild(resultItem);
+                    });
+                } else {
+                    resultsDiv.innerHTML = '<p>No results found.</p>';
+                }
             } catch (error) {
-                answerPara.innerText = "Error fetching answer. Please try again."; // Show error message on failure
+                loadingMessage.style.display = 'none';  // Hide loading message in case of an error
+                resultsDiv.innerHTML = '<p>Error fetching the answer. Please try again.</p>';
             }
         });
     </script>
