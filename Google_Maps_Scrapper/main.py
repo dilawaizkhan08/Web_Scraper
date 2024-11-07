@@ -2,12 +2,21 @@ from flask import Flask, render_template, request, jsonify
 from playwright.sync_api import sync_playwright
 import pandas as pd
 import os
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
-def extract_data(xpath, data_list, page):
-    data = page.locator(xpath).inner_text() if page.locator(xpath).count() > 0 else ""
-    data_list.append(data)
+def extract_data(xpath, data_list, page, timeout=5000):
+    try:
+        if page.locator(xpath).count() > 0:
+            data = page.locator(xpath).inner_text(timeout=timeout)
+            data_list.append(data)
+        else:
+            data_list.append("N/A")  # Default value if element is missing
+    except Exception as e:
+        print(f"Skipping element at {xpath} due to timeout/error: {e}")
+        data_list.append("N/A")  # Default value if data can't be fetched
 
 def scrape_data(search_for, total=10):
     names_list, address_list, website_list, phones_list = [], [], [], []
@@ -62,19 +71,27 @@ def scrape_data(search_for, total=10):
             extract_data(place_type_xpath, place_t_list, page)
             extract_data(intro_xpath, intro_list, page)
 
-            reviews_count = page.locator(reviews_count_xpath).inner_text() if page.locator(reviews_count_xpath).count() > 0 else ""
-            reviews_c_list.append(reviews_count.replace('(', '').replace(')', '').replace(',', ''))
+            # Safe extraction for specific elements
+            try:
+                reviews_count = page.locator(reviews_count_xpath).inner_text(timeout=5000) if page.locator(reviews_count_xpath).count() > 0 else ""
+                reviews_c_list.append(reviews_count.replace('(', '').replace(')', '').replace(',', ''))
 
-            reviews_average = page.locator(reviews_average_xpath).inner_text() if page.locator(reviews_average_xpath).count() > 0 else ""
-            reviews_a_list.append(reviews_average.replace(' ', '').replace(',', '.'))
+                reviews_average = page.locator(reviews_average_xpath).inner_text(timeout=5000) if page.locator(reviews_average_xpath).count() > 0 else ""
+                reviews_a_list.append(reviews_average.replace(' ', '').replace(',', '.'))
 
-            store_s_list.append("Yes" if 'shop' in page.locator(info1).inner_text() else "No")
-            in_store_list.append("Yes" if 'pickup' in page.locator(info1).inner_text() else "No")
-            store_del_list.append("Yes" if 'delivery' in page.locator(info1).inner_text() else "No")
+                store_s_list.append("Yes" if 'shop' in page.locator(info1).inner_text(timeout=5000) else "No")
+                in_store_list.append("Yes" if 'pickup' in page.locator(info1).inner_text(timeout=5000) else "No")
+                store_del_list.append("Yes" if 'delivery' in page.locator(info1).inner_text(timeout=5000) else "No")
+            except Exception as e:
+                print(f"Skipping store info due to timeout/error: {e}")
+                store_s_list.append("No")
+                in_store_list.append("No")
+                store_del_list.append("No")
 
-            opening_time = page.locator(opens_at_xpath).inner_text() if page.locator(opens_at_xpath).count() > 0 else ""
+            opening_time = page.locator(opens_at_xpath).inner_text(timeout=5000) if page.locator(opens_at_xpath).count() > 0 else ""
             open_list.append(opening_time)
 
+        # DataFrame construction and CSV output
         df = pd.DataFrame({
             'Names': names_list, 'Website': website_list, 'Introduction': intro_list,
             'Phone Number': phones_list, 'Address': address_list, 'Review Count': reviews_c_list,
@@ -102,4 +119,4 @@ def query():
     return data.to_dict(orient='records')
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000)
