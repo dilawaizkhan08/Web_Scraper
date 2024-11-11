@@ -1,11 +1,16 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 from playwright.sync_api import sync_playwright
 import pandas as pd
 import os
 from flask_cors import CORS
 
 app = Flask(__name__)
+app.secret_key = os.urandom(24)
 CORS(app)
+
+users = {
+    "testuser": "password123"  # username: password
+}
 
 def extract_data(xpath, data_list, page, timeout=5000):
     try:
@@ -108,15 +113,38 @@ def scrape_data(search_for, total=10):
 
 @app.route('/')
 def index():
+    return render_template('login.html')
+
+@app.route('/login', methods=['POST'])
+def login():
+    username = request.form.get('username')
+    password = request.form.get('password')
+
+    # Simple authentication (replace with your DB logic)
+    if users.get(username) == password:
+        session['username'] = username  # Set session data
+        return redirect(url_for('query'))
+    else:
+        return render_template('login.html', error="Invalid credentials")
+
+@app.route('/query', methods=['GET', 'POST'])
+def query():
+    if 'username' not in session:
+        return redirect(url_for('index'))  # Redirect to login if not logged in
+
+    if request.method == 'POST':
+        search_term = request.json.get('search_term')
+        if not search_term:
+            return jsonify({"error": "Search term is required"}), 400
+        data = scrape_data(search_term, total=10)
+        return data.to_dict(orient='records')
+
     return render_template('query.html')
 
-@app.route('/query', methods=['POST'])
-def query():
-    search_term = request.json.get('search_term')
-    if not search_term:
-        return jsonify({"error": "Search term is required"}), 400
-    data = scrape_data(search_term, total=10)
-    return data.to_dict(orient='records')
+@app.route('/logout')
+def logout():
+    session.pop('username', None)  # Remove user from session
+    return redirect(url_for('index'))  # Redirect to login page
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
