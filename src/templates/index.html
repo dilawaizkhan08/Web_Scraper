@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Crawler</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Web Crawler</h1>
+        <form id="query-form">
+            <label for="query">Enter your search query:</label>
+            <input type="text" id="query" name="query" required>
+            <button type="submit">Start Scraping</button>
+        </form>
+        <p id="status-message"></p>
+    </div>
+
+    <script>
+        document.getElementById("query-form").addEventListener("submit", function(event) {
+            event.preventDefault(); // Prevent form from submitting normally
+
+            const query = document.getElementById("query").value;
+            const statusMessage = document.getElementById("status-message");
+
+            // Make AJAX request to start scraping
+            fetch('/start-scraping', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: query })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "Scraping started") {
+                    statusMessage.textContent = "Scraping has started!";
+                } else {
+                    statusMessage.textContent = "Error: " + data.error;
+                }
+            })
+            .catch(error => {
+                statusMessage.textContent = "An error occurred: " + error.message;
+            });
+        });
+    </script>
+</body>
+</html>

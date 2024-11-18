@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Query Interface</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        #response {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            background-color: #f9f9f9;
+        }
+        #loadingMessage {
+            display: none;
+            font-size: 1.1em;
+            color: #555;
+            margin-top: 15px;
+        }
+        .result-item {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        .result-item h3 {
+            margin: 0;
+            font-size: 1.2em;
+        }
+        .result-item p {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Query the Scraped Data</h1>
+    <form id="queryForm">
+        <label for="query">Enter your question:</label><br>
+        <input type="text" id="query" name="query" required style="width: 100%; padding: 8px; margin: 8px 0;"><br>
+        <button type="submit" style="padding: 10px 15px;">Submit</button>
+    </form>
+
+    <!-- Loading Message -->
+    <div id="loadingMessage">Loading, please wait...</div>
+
+    <div id="response" style="display:none;">
+        <h2>Response</h2>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        document.getElementById('queryForm').addEventListener('submit', async (e) => {
+            e.preventDefault(); // Prevent default form submission
+
+            const query = document.getElementById('query').value;
+            const responseDiv = document.getElementById('response');
+            const resultsDiv = document.getElementById('results'); // Div to display each result
+            const loadingMessage = document.getElementById('loadingMessage'); // Loading message div
+
+            // Clear any previous results and show loading
+            resultsDiv.innerHTML = '';
+            responseDiv.style.display = 'none';
+            loadingMessage.style.display = 'block';  // Show loading message
+
+            try {
+                // Fetch the answer from the server
+                const response = await fetch('/generate-answer', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ query })
+                });
+
+                const data = await response.json();
+
+                // Hide loading message once data is received
+                loadingMessage.style.display = 'none';
+
+                // Check for response data and display it
+                if (data.response && Array.isArray(data.response)) {
+                    responseDiv.style.display = 'block';
+                    data.response.forEach(result => {
+                        const resultItem = document.createElement('div');
+                        resultItem.classList.add('result-item');
+
+                        resultItem.innerHTML = `
+                            <h3><a href="${result.url}" target="_blank">${result.title}</a></h3>
+                            <p>${result.content}</p>
+                        `;
+                        resultsDiv.appendChild(resultItem);
+                    });
+                } else {
+                    resultsDiv.innerHTML = '<p>No results found.</p>';
+                }
+            } catch (error) {
+                loadingMessage.style.display = 'none';  // Hide loading message in case of an error
+                resultsDiv.innerHTML = '<p>Error fetching the answer. Please try again.</p>';
+            }
+        });
+    </script>
+</body>
+</html>
