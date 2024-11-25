@@ -4,6 +4,7 @@ import pandas as pd
 import os
 from flask_cors import CORS
 
+
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 CORS(app)
@@ -88,7 +89,7 @@ def scrape_data(search_for, total=10):
                 in_store_list.append("Yes" if 'pickup' in page.locator(info1).inner_text(timeout=5000) else "No")
                 store_del_list.append("Yes" if 'delivery' in page.locator(info1).inner_text(timeout=5000) else "No")
             except Exception as e:
-                print(f"Skipping store info due to timeout/error: {e}")
+                print(f"Skipping store info due to timeout error: {e}")
                 store_s_list.append("No")
                 in_store_list.append("No")
                 store_del_list.append("No")
@@ -148,3 +149,4 @@ def logout():
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
+    
