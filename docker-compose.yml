@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile  # Root directory Dockerfile
+    container_name: web-scrapper
+    ports:
+      - "5000:5000"  # Map to the application's port
+    volumes:
+      - .:/app  # Mount the root directory for real-time changes
+    environment:
+      - ENV_VAR1=value1
+      - ENV_VAR2=value2
+    command: ["python", "src/app.py"]  # Ensure this matches your root app's entry point
+
+  secondary_app:
+    build:
+      context: ./Google_Maps_Scrapper # Path to the subdirectory with its own Dockerfile
+      dockerfile: Dockerfile
+    container_name: google-maps-scrapper
+    ports:
+      - "5001:5000"  # Map to a different external port to avoid conflicts
+    volumes:
+      - ./Google_Maps_Scrapper:/app  # Mount the subdirectory to keep files synced
+    environment:
+      - ENV_VAR1=value1
+      - ENV_VAR2=value2
+    command: ["python", "main.py"]  # Ensure this matches the entry point for secondary app
