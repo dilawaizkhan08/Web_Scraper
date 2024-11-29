@@ -2,11 +2,11 @@ selenium==4.5.0
 python-dotenv==1.0.0
 urllib3==1.26.7
 googlesearch-python
-SQLAlchemy 
+SQLAlchemy
 Flask-SQLAlchemy
 numpy
 langchain
 langchain-community
-
-
-
+sentence-transformers
+torch==2.0.1
+langchain-huggingface

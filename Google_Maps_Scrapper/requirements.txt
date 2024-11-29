@@ -10,3 +10,7 @@ pytz
 six
 typing_extensions
 flask
+flask-cors
+requests
+Flask-JWT-Extended
+
