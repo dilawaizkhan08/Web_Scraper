@@ -93,6 +93,10 @@
     <form id="queryForm">
         <label for="search">Enter search term:</label>
         <input type="text" id="search" required>
+        <label for="message">Question you wanna ask?</label>
+        <input type="text" id="message" name="message" required><br><br>
+        <!-- <label for="prompt">Prompt</label>
+        <input type="text" id="prompt" name="prompt" required><br><br> -->
         <button type="submit">Submit</button>
     </form>
     <div id="loadingMessage">Loading, please wait...</div>
@@ -100,23 +104,29 @@
 
     <script>
         document.getElementById('queryForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const searchTerm = document.getElementById('search').value;
-            document.getElementById('loadingMessage').style.display = 'block';
+        e.preventDefault();
+        
+        const searchTerm = document.getElementById('search').value;
+        const message = document.getElementById('message').value; 
+        // const prompt = document.getElementById('prompt').value; 
+        document.getElementById('loadingMessage').style.display = 'block';
 
-            try {
-                const response = await fetch('/query', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ search_term: searchTerm })
-                });
-                const data = await response.json();
-                document.getElementById('loadingMessage').style.display = 'none';
-                displayResults(data);
-            } catch (error) {
-                console.error('Error:', error);
-            }
-        });
+        try {
+            const response = await fetch('/query', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    search_term: searchTerm, 
+                    message: message,
+                })
+            });
+            const data = await response.json();
+            document.getElementById('loadingMessage').style.display = 'none';
+            displayResults(data);
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    });
 
         function displayResults(data) {
             let html = `<table>

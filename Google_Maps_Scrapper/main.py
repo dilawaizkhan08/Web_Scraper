@@ -6,6 +6,8 @@ from flask_cors import CORS
 import requests
 import time
 import os
+from dotenv import load_dotenv
+load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -14,7 +16,6 @@ CORS(app)
 users = {
     "testuser": "password123"  # username: password
 }
-
 
 def extract_data(xpath, data_list, page, timeout=5000):
     try:
@@ -122,7 +123,53 @@ def scrape_data(search_for, total=10):
         return df
     
 
-def make_call(phone_number, customer_number, message="Hello, this is a test call"):
+# def make_call(phone_number, customer_number, message=None):
+#     try:
+#         # Use the provided message or default to a generic one
+#         if message is None:
+#             message = "Hello, this is a test call."
+
+#         # Prepare the payload for the VAPI API
+#         payload = {
+#             "assistantId": "e32e3b55-c9ca-471f-988a-274fc54d7f00",  # Your Assistant ID
+#             "name": "Sarah",  # Assistant name
+#             "assistant": {
+#                 "transcriber": {
+#                     "provider": "assembly-ai"  # Transcriber provider
+#                 },
+#                 "model": {
+#                     "provider": "groq",  # Model provider
+#                     "model": "llama-3.1-70b-versatile"  # Your model name
+#                 },
+#                 "firstMessage": message,  # Dynamic message
+#             },
+#             "phoneNumber": {
+#                 "twilioAccountSid": os.getenv("TWILIO_SID"),  # Twilio Account SID
+#                 "twilioAuthToken": os.getenv("TWILIO_TOKEN"),  # Twilio Auth Token
+#                 "twilioPhoneNumber": os.getenv("TWILIO_NUMBER"),  # Twilio Phone Number
+#                 "recipientPhoneNumber": phone_number  # Destination phone number
+#             }
+#         }
+
+#         # Make the API call
+#         api_url = "https://api.vapi.ai/call"
+#         response = requests.post(api_url, json=payload)
+#         response_data = response.json()
+
+#         if response.status_code == 200:
+#             print(f"Call successfully initiated to {phone_number} with message: {message}")
+#         else:
+#             error_message = response_data.get('error', 'Unknown error')
+#             print(f"Failed to initiate call. Error: {error_message}")
+
+#         return response_data
+#     except Exception as e:
+#         print(f"An error occurred while making the call: {e}")
+#         return {"error": str(e)}
+
+
+
+def make_call(phone_number, customer_number, message):
     try:
         # VAPI API endpoint and request payload
         payload = {
@@ -134,9 +181,10 @@ def make_call(phone_number, customer_number, message="Hello, this is a test call
                 },
                 "model": {
                     "provider": "groq",  # Model provider
-                    "model": "llama-3.1-70b-versatile"  # Your model name
+                    "model": "llama-3.1-70b-versatile",  # Your model name
+                    "systemPrompt": "You are an assistant calling businesses. Your task is to ask them about their business"
                 },
-                "firstMessage": "Hi there! I'm Sarah. Can you provide the menu with price",
+                "firstMessage": message,
             },
             "phoneNumber": {
                 "twilioAccountSid": os.getenv("TWILIO_SID"),  # Twilio Account SID
@@ -168,7 +216,7 @@ def make_call(phone_number, customer_number, message="Hello, this is a test call
     
 
 # # Example usage:
-customer_number = os.getenv("TWILIO_NUMBER")  # Customer's phone number
+customer_number = "+923116805861"  # Customer's phone number
 # result = make_call("+19083864875", customer_number)
 # print(result)
 
@@ -210,16 +258,41 @@ def query():
 
     if request.method == 'POST':
         search_term = request.json.get('search_term')
+        message = request.json.get('message')
+        # prompt = request.json.get('prompt')
         if not search_term:
             return jsonify({"error": "Search term is required"}), 400
         data = scrape_data(search_term, total=10)
         # csv_file_path = 'result.csv'
         # call_all_numbers_from_csv(csv_file_path)  # Call VAPI numbers from the CSV
 
-        make_call(os.getenv("TWILIO_NUMBER"), customer_number)
+        make_call("+19083864875", customer_number, message)
         return data.to_dict(orient='records')
         
     return render_template('query.html')
+
+
+# @app.route('/query', methods=['GET', 'POST'])
+# def query():
+#     if 'username' not in session:
+#         return redirect(url_for('index'))  # Redirect to login if not logged in
+
+#     if request.method == 'POST':
+#         # Get the search term and optional message from the request
+#         search_term = request.json.get('search_term')
+#         message = request.json.get('message', "Hello, this is a default query call.")  # Default message
+
+#         if not search_term:
+#             return jsonify({"error": "Search term is required"}), 400
+
+#         # Process the query and initiate the call
+#         data = scrape_data(search_term, total=10)
+#         customer_number = "+19083864875"  # Example dynamic number
+#         make_call("+19083864875", customer_number, message=message)
+
+#         return jsonify({"data": data.to_dict(orient='records'), "message": message})
+
+#     return render_template('query.html')
 
 @app.route('/logout')
 def logout():
@@ -228,4 +301,5 @@ def logout():
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
+
     
