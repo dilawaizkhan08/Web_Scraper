@@ -13,4 +13,5 @@ flask
 flask-cors
 requests
 Flask-JWT-Extended
+python-dotenv
 
