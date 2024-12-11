@@ -5,6 +5,7 @@ import os
 from flask_cors import CORS
 import requests
 import time
+from flask import session
 import os
 from dotenv import load_dotenv
 load_dotenv()
@@ -121,56 +122,52 @@ def scrape_data(search_for, total=10):
         print(df.to_string(index=False))
         browser.close()
         return df
-    
 
-# def make_call(phone_number, customer_number, message=None):
-#     try:
-#         # Use the provided message or default to a generic one
-#         if message is None:
-#             message = "Hello, this is a test call."
 
-#         # Prepare the payload for the VAPI API
-#         payload = {
-#             "assistantId": "e32e3b55-c9ca-471f-988a-274fc54d7f00",  # Your Assistant ID
-#             "name": "Sarah",  # Assistant name
-#             "assistant": {
-#                 "transcriber": {
-#                     "provider": "assembly-ai"  # Transcriber provider
-#                 },
-#                 "model": {
-#                     "provider": "groq",  # Model provider
-#                     "model": "llama-3.1-70b-versatile"  # Your model name
-#                 },
-#                 "firstMessage": message,  # Dynamic message
-#             },
-#             "phoneNumber": {
-#                 "twilioAccountSid": os.getenv("TWILIO_SID"),  # Twilio Account SID
-#                 "twilioAuthToken": os.getenv("TWILIO_TOKEN"),  # Twilio Auth Token
-#                 "twilioPhoneNumber": os.getenv("TWILIO_NUMBER"),  # Twilio Phone Number
-#                 "recipientPhoneNumber": phone_number  # Destination phone number
-#             }
-#         }
 
-#         # Make the API call
-#         api_url = "https://api.vapi.ai/call"
-#         response = requests.post(api_url, json=payload)
-#         response_data = response.json()
+@app.route('/submit-twilio-config', methods=['POST'])
+def submit_twilio_config():
+    try:
+        data = request.get_json()  # Get JSON data from the request
+        twilio_account_sid = data.get('twilioAccountSid')
+        twilio_auth_token = data.get('twilioAuthToken')
+        twilio_phone_number = data.get('twilioPhoneNumber')
+        customer_number = data.get('customerPhoneNumber')
 
-#         if response.status_code == 200:
-#             print(f"Call successfully initiated to {phone_number} with message: {message}")
-#         else:
-#             error_message = response_data.get('error', 'Unknown error')
-#             print(f"Failed to initiate call. Error: {error_message}")
+        # Validate the data (optional)
+        if not (twilio_account_sid and twilio_auth_token and twilio_phone_number):
+            return jsonify({'message': 'All fields are required!'}), 400
 
-#         return response_data
-#     except Exception as e:
-#         print(f"An error occurred while making the call: {e}")
-#         return {"error": str(e)}
+        # Store the configuration in the session
+        session['twilio_config'] = {
+            "twilioAccountSid": twilio_account_sid,
+            "twilioAuthToken": twilio_auth_token,
+            "twilioPhoneNumber": twilio_phone_number,
+            "customerPhoneNumber": customer_number
+        }
 
+        # Redirect to the query page after successful submission
+        return redirect(url_for('query'))  # Redirect to the 'query' route
+
+    except Exception as e:
+        # Handle exceptions and display error
+        return render_template('twilio.html', error="Invalid credentials")
 
 
 def make_call(phone_number, customer_number, message):
     try:
+        # Get Twilio credentials from session
+        twilio_config = session.get('twilio_config')
+        
+        if not twilio_config:
+            return {"error": "Twilio configuration not found. Please submit the configuration first."}
+        
+        # Extract credentials from session
+        twilio_account_sid = twilio_config.get('twilioAccountSid')
+        twilio_auth_token = twilio_config.get('twilioAuthToken')
+        twilio_phone_number = twilio_config.get('twilioPhoneNumber')
+        customer_number = twilio_config.get('customerPhoneNumber')
+
         # VAPI API endpoint and request payload
         payload = {
             "assistantId": "e32e3b55-c9ca-471f-988a-274fc54d7f00",  # Your Assistant ID
@@ -187,9 +184,9 @@ def make_call(phone_number, customer_number, message):
                 "firstMessage": message,
             },
             "phoneNumber": {
-                "twilioAccountSid": os.getenv("TWILIO_SID"),  # Twilio Account SID
-                "twilioAuthToken": os.getenv("TWILIO_TOKEN"),  # Twilio Auth Token
-                "twilioPhoneNumber": os.getenv("TWILIO_NUMBER"),  # Twilio phone number
+                "twilioAccountSid": twilio_account_sid,
+                "twilioAuthToken": twilio_auth_token,
+                "twilioPhoneNumber": twilio_phone_number,
             },
             "customer": {
                 "number": customer_number  # Customer phone number
@@ -213,10 +210,8 @@ def make_call(phone_number, customer_number, message):
     except requests.exceptions.RequestException as e:
         print(f"Error making call to {phone_number}: {e}")
         return {"error": str(e)}
-    
-
 # # Example usage:
-customer_number = "+923116805861"  # Customer's phone number
+# customer_number = "+923116805861"  # Customer's phone number
 # result = make_call("+19083864875", customer_number)
 # print(result)
 
@@ -247,12 +242,16 @@ def login():
     # Simple authentication (replace with your DB logic)
     if users.get(username) == password:
         session['username'] = username  # Set session data
-        return redirect(url_for('query'))
+        return render_template('twilio.html') 
     else:
         return render_template('login.html', error="Invalid credentials")
 
 @app.route('/query', methods=['GET', 'POST'])
 def query():
+    twilio_config = session.get('twilio_config')
+    twilio_phone_number = twilio_config.get('twilioPhoneNumber')
+    customer_number = twilio_config.get('customerPhoneNumber')
+
     if 'username' not in session:
         return redirect(url_for('index'))  # Redirect to login if not logged in
 
@@ -266,33 +265,11 @@ def query():
         # csv_file_path = 'result.csv'
         # call_all_numbers_from_csv(csv_file_path)  # Call VAPI numbers from the CSV
 
-        make_call("+19083864875", customer_number, message)
+        make_call(twilio_phone_number, customer_number, message)
         return data.to_dict(orient='records')
         
     return render_template('query.html')
 
-
-# @app.route('/query', methods=['GET', 'POST'])
-# def query():
-#     if 'username' not in session:
-#         return redirect(url_for('index'))  # Redirect to login if not logged in
-
-#     if request.method == 'POST':
-#         # Get the search term and optional message from the request
-#         search_term = request.json.get('search_term')
-#         message = request.json.get('message', "Hello, this is a default query call.")  # Default message
-
-#         if not search_term:
-#             return jsonify({"error": "Search term is required"}), 400
-
-#         # Process the query and initiate the call
-#         data = scrape_data(search_term, total=10)
-#         customer_number = "+19083864875"  # Example dynamic number
-#         make_call("+19083864875", customer_number, message=message)
-
-#         return jsonify({"data": data.to_dict(orient='records'), "message": message})
-
-#     return render_template('query.html')
 
 @app.route('/logout')
 def logout():
